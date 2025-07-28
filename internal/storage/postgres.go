@@ -16,29 +16,42 @@ import (
 	"go.uber.org/zap"
 )
 
-// Storage определяет интерфейс для хранения данных.
-type Storage interface {
-	// Методы для работы с пользователями
+// UserRepository определяет интерфейс для работы с пользователями
+type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error)
+}
 
-	// Методы для работы с данными
+// DataRepository определяет интерфейс для работы с данными
+type DataRepository interface {
 	CreateDataEntry(ctx context.Context, entry *models.DataEntry) error
 	GetDataEntry(ctx context.Context, userID, entryID uuid.UUID) (*models.DataEntry, error)
 	GetDataEntries(ctx context.Context, userID uuid.UUID, dataType *models.DataType) ([]models.DataEntry, error)
 	UpdateDataEntry(ctx context.Context, entry *models.DataEntry) error
 	DeleteDataEntry(ctx context.Context, userID, entryID uuid.UUID) error
+}
 
-	// Методы для синхронизации
+// SyncRepository определяет интерфейс для синхронизации данных
+type SyncRepository interface {
 	GetDataEntriesAfter(ctx context.Context, userID uuid.UUID, after time.Time) ([]models.DataEntry, error)
 	GetDeletedEntriesAfter(ctx context.Context, userID uuid.UUID, after time.Time) ([]uuid.UUID, error)
+}
 
-	// Закрытие соединения
+// ConnectionManager определяет интерфейс для управления соединением
+type ConnectionManager interface {
 	Close()
 }
 
-// PostgresStorage реализует интерфейс Storage для PostgreSQL.
+// Storage объединяет все репозитории в один интерфейс
+type Storage interface {
+	UserRepository
+	DataRepository
+	SyncRepository
+	ConnectionManager
+}
+
+// PostgresStorage реализует все интерфейсы для PostgreSQL.
 type PostgresStorage struct {
 	pool   *pgxpool.Pool
 	logger *zap.Logger

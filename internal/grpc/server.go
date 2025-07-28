@@ -23,16 +23,16 @@ import (
 // Server реализует gRPC сервер GophKeeper.
 type Server struct {
 	pb.UnimplementedGophKeeperServer
-	
+
 	// Основные сервисы
 	storage storage.Storage
 	logger  *zap.Logger
-	
+
 	// Сервисы аутентификации и безопасности
 	authService   *auth.Service
 	cryptoService *crypto.Service
 	otpService    *otp.Service
-	
+
 	// Валидация
 	validator *validator.Validate
 }
@@ -64,14 +64,41 @@ func NewGRPCServer(server *Server) *grpc.Server {
 	return grpcServer
 }
 
+// validateAuthRequest валидирует запросы аутентификации
+func (s *Server) validateAuthRequest(username, password string) error {
+	if username == "" || len(username) < 3 {
+		return status.Error(codes.InvalidArgument, "username must be at least 3 characters")
+	}
+	if password == "" || len(password) < 6 {
+		return status.Error(codes.InvalidArgument, "password must be at least 6 characters")
+	}
+	return nil
+}
+
+// validateLoginRequest валидирует запросы входа (более мягкие требования)
+func (s *Server) validateLoginRequest(username, password string) error {
+	if username == "" {
+		return status.Error(codes.InvalidArgument, "username is required")
+	}
+	if password == "" {
+		return status.Error(codes.InvalidArgument, "password is required")
+	}
+	return nil
+}
+
+// validateTokenRequest валидирует запросы с токенами
+func (s *Server) validateTokenRequest(token string) error {
+	if token == "" {
+		return status.Error(codes.InvalidArgument, "token is required")
+	}
+	return nil
+}
+
 // Register регистрирует нового пользователя.
 func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
 	// Валидируем запрос
-	if req.Username == "" || len(req.Username) < 3 {
-		return nil, status.Error(codes.InvalidArgument, "username must be at least 3 characters")
-	}
-	if req.Password == "" || len(req.Password) < 6 {
-		return nil, status.Error(codes.InvalidArgument, "password must be at least 6 characters")
+	if err := s.validateAuthRequest(req.Username, req.Password); err != nil {
+		return nil, err
 	}
 
 	// Хешируем пароль
@@ -117,11 +144,8 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Aut
 // Login аутентифицирует пользователя.
 func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
 	// Валидируем запрос
-	if req.Username == "" {
-		return nil, status.Error(codes.InvalidArgument, "username is required")
-	}
-	if req.Password == "" {
-		return nil, status.Error(codes.InvalidArgument, "password is required")
+	if err := s.validateLoginRequest(req.Username, req.Password); err != nil {
+		return nil, err
 	}
 
 	// Получаем пользователя
@@ -158,8 +182,8 @@ func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.AuthRespo
 
 // RefreshToken обновляет JWT токен.
 func (s *Server) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.AuthResponse, error) {
-	if req.Token == "" {
-		return nil, status.Error(codes.InvalidArgument, "token is required")
+	if err := s.validateTokenRequest(req.Token); err != nil {
+		return nil, err
 	}
 
 	token, expiresAt, err := s.authService.RefreshToken(req.Token)
