@@ -23,12 +23,18 @@ import (
 // Server реализует gRPC сервер GophKeeper.
 type Server struct {
 	pb.UnimplementedGophKeeperServer
-	storage       storage.Storage
+	
+	// Основные сервисы
+	storage storage.Storage
+	logger  *zap.Logger
+	
+	// Сервисы аутентификации и безопасности
 	authService   *auth.Service
 	cryptoService *crypto.Service
 	otpService    *otp.Service
-	validator     *validator.Validate
-	logger        *zap.Logger
+	
+	// Валидация
+	validator *validator.Validate
 }
 
 // NewServer создает новый gRPC сервер.

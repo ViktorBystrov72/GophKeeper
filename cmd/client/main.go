@@ -16,45 +16,80 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	if shouldShowVersionOrHelp() {
+		return
+	}
 
-	// Проверяем флаги команды ПЕРЕД инициализации логгера
+	if err := runApplication(); err != nil {
+		log.Fatalf("Application failed: %v", err)
+	}
+}
+
+// shouldShowVersionOrHelp проверяет, нужно ли показать версию или справку
+func shouldShowVersionOrHelp() bool {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "version", "--version", "-v":
 			// Устанавливаем значения по умолчанию для версии
 			version.SetDefaults()
 			version.PrintVersionInfo("GophKeeper Client")
-			return
+			return true
 		case "help", "--help", "-h":
 			showHelp()
-			return
+			return true
 		}
 	}
+	return false
+}
 
-	cfg, err := config.LoadClientConfig()
+// runApplication выполняет основную логику приложения
+func runApplication() error {
+	ctx := context.Background()
+
+	// Загружаем конфигурацию
+	cfg, err := loadConfiguration()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	zapLogger, err := logger.NewDevelopmentLogger()
+	// Инициализируем логгер
+	zapLogger, err := initializeLogger()
 	if err != nil {
-		log.Fatalf("Failed to create logger: %v", err)
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 	defer zapLogger.Sync()
 
+	// Логируем информацию о версии
 	version.LogVersionInfo(zapLogger, "GophKeeper client")
 
-	gkClient, err := client.NewClient(cfg, zapLogger)
+	// Создаем клиент
+	gkClient, err := createClient(cfg, zapLogger)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		return fmt.Errorf("failed to create client: %w", err)
 	}
 	defer gkClient.Close()
 
 	// Запускаем TUI приложение
 	if err := runTUI(ctx, gkClient, zapLogger); err != nil {
-		log.Fatalf("TUI error: %v", err)
+		return fmt.Errorf("TUI error: %w", err)
 	}
+
+	return nil
+}
+
+// loadConfiguration загружает конфигурацию клиента
+func loadConfiguration() (*config.ClientConfig, error) {
+	return config.LoadClientConfig()
+}
+
+// initializeLogger инициализирует логгер
+func initializeLogger() (*zap.Logger, error) {
+	return logger.NewDevelopmentLogger()
+}
+
+// createClient создает клиент GophKeeper
+func createClient(cfg *config.ClientConfig, logger *zap.Logger) (*client.Client, error) {
+	return client.NewClient(cfg, logger)
 }
 
 // runTUI запускает терминальный интерфейс пользователя.
