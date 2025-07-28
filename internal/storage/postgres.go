@@ -122,6 +122,55 @@ func (s *PostgresStorage) handleDBError(err error, uniqueViolationMsg string) er
 	return fmt.Errorf("database operation failed: %w", err)
 }
 
+// handleQueryRowError обрабатывает ошибки QueryRow с проверкой на отсутствие строк
+func (s *PostgresStorage) handleQueryRowError(err error, notFoundMsg string, operationMsg string) error {
+	if err == nil {
+		return nil
+	}
+
+	if err == pgx.ErrNoRows {
+		return fmt.Errorf("%s: %w", notFoundMsg, err)
+	}
+	return fmt.Errorf("%s: %w", operationMsg, err)
+}
+
+// handleQueryError обрабатывает ошибки Query с дополнительной информацией
+func (s *PostgresStorage) handleQueryError(err error, operationMsg string) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: %w", operationMsg, err)
+}
+
+// handleScanError обрабатывает ошибки сканирования результатов
+func (s *PostgresStorage) handleScanError(err error, operationMsg string) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: %w", operationMsg, err)
+}
+
+// handleRowsError обрабатывает ошибки итерации по строкам
+func (s *PostgresStorage) handleRowsError(err error, operationMsg string) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: %w", operationMsg, err)
+}
+
+// handleExecError обрабатывает ошибки Exec с проверкой на уникальность
+func (s *PostgresStorage) handleExecError(err error, uniqueViolationMsg string, operationMsg string) error {
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		return fmt.Errorf("%s: %w", uniqueViolationMsg, err)
+	}
+	return fmt.Errorf("%s: %w", operationMsg, err)
+}
+
 // CreateUser создает нового пользователя.
 func (s *PostgresStorage) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
@@ -131,7 +180,7 @@ func (s *PostgresStorage) CreateUser(ctx context.Context, user *models.User) err
 	user.ID, user.CreatedAt, user.UpdatedAt = s.prepareNewEntity()
 
 	_, err := s.pool.Exec(ctx, query, user.ID, user.Username, user.PasswordHash, user.CreatedAt, user.UpdatedAt)
-	return s.handleDBError(err, "username already exists")
+	return s.handleExecError(err, "username already exists", "failed to create user")
 }
 
 // GetUserByUsername получает пользователя по имени.
@@ -147,11 +196,8 @@ func (s *PostgresStorage) GetUserByUsername(ctx context.Context, username string
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("user not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+	if err := s.handleQueryRowError(err, "user not found", "failed to get user"); err != nil {
+		return nil, err
 	}
 
 	return &user, nil
@@ -170,11 +216,8 @@ func (s *PostgresStorage) GetUserByID(ctx context.Context, userID uuid.UUID) (*m
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("user not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+	if err := s.handleQueryRowError(err, "user not found", "failed to get user"); err != nil {
+		return nil, err
 	}
 
 	return &user, nil
@@ -194,7 +237,7 @@ func (s *PostgresStorage) CreateDataEntry(ctx context.Context, entry *models.Dat
 		entry.CreatedAt, entry.UpdatedAt, entry.Version,
 	)
 
-	return s.handleDBError(err, "entry with this name already exists")
+	return s.handleExecError(err, "entry with this name already exists", "failed to create data entry")
 }
 
 // GetDataEntry получает запись данных по ID.
@@ -211,11 +254,8 @@ func (s *PostgresStorage) GetDataEntry(ctx context.Context, userID, entryID uuid
 		&entry.CreatedAt, &entry.UpdatedAt, &entry.Version,
 	)
 
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("data entry not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to get data entry: %w", err)
+	if err := s.handleQueryRowError(err, "data entry not found", "failed to get data entry"); err != nil {
+		return nil, err
 	}
 
 	return &entry, nil
@@ -243,8 +283,8 @@ func (s *PostgresStorage) GetDataEntries(ctx context.Context, userID uuid.UUID, 
 	}
 
 	rows, err := s.pool.Query(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query data entries: %w", err)
+	if err := s.handleQueryError(err, "failed to query data entries"); err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -256,14 +296,14 @@ func (s *PostgresStorage) GetDataEntries(ctx context.Context, userID uuid.UUID, 
 			&entry.Description, &entry.EncryptedData, &entry.Metadata,
 			&entry.CreatedAt, &entry.UpdatedAt, &entry.Version,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan data entry: %w", err)
+		if err := s.handleScanError(err, "failed to scan data entry"); err != nil {
+			return nil, err
 		}
 		entries = append(entries, entry)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during rows iteration: %w", err)
+	if err := s.handleRowsError(rows.Err(), "error during rows iteration"); err != nil {
+		return nil, err
 	}
 
 	return entries, nil
@@ -281,8 +321,8 @@ func (s *PostgresStorage) UpdateDataEntry(ctx context.Context, entry *models.Dat
 		entry.ID, entry.UserID, entry.Version,
 	)
 
-	if err != nil {
-		return fmt.Errorf("failed to update data entry: %w", err)
+	if err := s.handleExecError(err, "entry with this name already exists", "failed to update data entry"); err != nil {
+		return err
 	}
 
 	if result.RowsAffected() == 0 {
@@ -307,8 +347,8 @@ func (s *PostgresStorage) DeleteDataEntry(ctx context.Context, userID, entryID u
 	// Удаляем запись
 	deleteQuery := `DELETE FROM data_entries WHERE id = $1 AND user_id = $2`
 	result, err := tx.Exec(ctx, deleteQuery, entryID, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete data entry: %w", err)
+	if err := s.handleExecError(err, "", "failed to delete data entry"); err != nil {
+		return err
 	}
 
 	if result.RowsAffected() == 0 {
@@ -318,8 +358,8 @@ func (s *PostgresStorage) DeleteDataEntry(ctx context.Context, userID, entryID u
 	// Добавляем запись в таблицу удаленных для синхронизации
 	insertQuery := `INSERT INTO deleted_entries (id, user_id, deleted_at) VALUES ($1, $2, NOW())`
 	_, err = tx.Exec(ctx, insertQuery, entryID, userID)
-	if err != nil {
-		return fmt.Errorf("failed to insert deleted entry: %w", err)
+	if err := s.handleExecError(err, "", "failed to insert deleted entry"); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -338,8 +378,8 @@ func (s *PostgresStorage) GetDataEntriesAfter(ctx context.Context, userID uuid.U
 		ORDER BY updated_at ASC`
 
 	rows, err := s.pool.Query(ctx, query, userID, after)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query data entries: %w", err)
+	if err := s.handleQueryError(err, "failed to query data entries"); err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -351,13 +391,17 @@ func (s *PostgresStorage) GetDataEntriesAfter(ctx context.Context, userID uuid.U
 			&entry.Description, &entry.EncryptedData, &entry.Metadata,
 			&entry.CreatedAt, &entry.UpdatedAt, &entry.Version,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan data entry: %w", err)
+		if err := s.handleScanError(err, "failed to scan data entry"); err != nil {
+			return nil, err
 		}
 		entries = append(entries, entry)
 	}
 
-	return entries, rows.Err()
+	if err := s.handleRowsError(rows.Err(), "error during rows iteration"); err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }
 
 // GetDeletedEntriesAfter получает ID записей, удаленных после указанного времени.
@@ -369,8 +413,8 @@ func (s *PostgresStorage) GetDeletedEntriesAfter(ctx context.Context, userID uui
 		ORDER BY deleted_at ASC`
 
 	rows, err := s.pool.Query(ctx, query, userID, after)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query deleted entries: %w", err)
+	if err := s.handleQueryError(err, "failed to query deleted entries"); err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -383,7 +427,11 @@ func (s *PostgresStorage) GetDeletedEntriesAfter(ctx context.Context, userID uui
 		deletedIDs = append(deletedIDs, id)
 	}
 
-	return deletedIDs, rows.Err()
+	if err := s.handleRowsError(rows.Err(), "error during rows iteration"); err != nil {
+		return nil, err
+	}
+
+	return deletedIDs, nil
 }
 
 // Close закрывает соединение с базой данных.
