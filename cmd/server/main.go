@@ -21,6 +21,7 @@ import (
 	grpcServer "github.com/GophKeeper/internal/grpc"
 	"github.com/GophKeeper/internal/logger"
 	"github.com/GophKeeper/internal/middleware"
+	"github.com/GophKeeper/internal/migrations"
 	"github.com/GophKeeper/internal/otp"
 	"github.com/GophKeeper/internal/storage"
 	"github.com/GophKeeper/internal/version"
@@ -64,6 +65,11 @@ func main() {
 
 // runServer запускает сервер с graceful shutdown.
 func runServer(ctx context.Context, cfg *config.ServerConfig, logger *zap.Logger) error {
+	// Выполняем миграции перед созданием хранилища
+	if err := migrations.RunMigrations(ctx, cfg.DatabaseURI, "../../migrations"); err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	// Инициализация базы данных
 	dbStorage, err := storage.NewPostgresStorage(ctx, cfg.DatabaseURI, logger)
 	if err != nil {

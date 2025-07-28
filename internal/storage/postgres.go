@@ -3,14 +3,9 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"time"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/pressly/goose/v3"
 
 	"github.com/GophKeeper/internal/models"
 	"github.com/google/uuid"
@@ -51,11 +46,6 @@ type PostgresStorage struct {
 
 // NewPostgresStorage создает новое подключение к PostgreSQL.
 func NewPostgresStorage(ctx context.Context, databaseURI string, logger *zap.Logger) (*PostgresStorage, error) {
-	// Выполняем миграции перед созданием пула соединений
-	if err := RunMigrations(ctx, databaseURI, "../../migrations"); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
-
 	pool, err := pgxpool.New(ctx, databaseURI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
@@ -90,31 +80,6 @@ func NewPostgresStorageForTests(ctx context.Context, databaseURI string, logger 
 		pool:   pool,
 		logger: logger,
 	}, nil
-}
-
-// RunMigrations выполняет миграции базы данных
-func RunMigrations(ctx context.Context, dsn string, migrationsDir string) error {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return fmt.Errorf("failed to open database for migrations: %w", err)
-	}
-	defer db.Close()
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("failed to set dialect: %w", err)
-	}
-
-	// Получаем абсолютный путь к директории миграций
-	absPath, err := filepath.Abs(migrationsDir)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path for migrations: %w", err)
-	}
-
-	if err := goose.Up(db, absPath); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	return nil
 }
 
 // CreateUser создает нового пользователя.

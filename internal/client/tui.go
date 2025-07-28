@@ -16,6 +16,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// Интервал автоматической синхронизации данных
+const syncInterval = 5 * time.Second
+
 // Состояния приложения
 type appState int
 
@@ -887,7 +890,7 @@ func (m *TUIModel) loadDataEntry(id string) tea.Cmd {
 }
 
 func (m *TUIModel) tick() tea.Cmd {
-	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
+	return tea.Tick(syncInterval, func(t time.Time) tea.Msg {
 		return tickMsg{}
 	})
 }

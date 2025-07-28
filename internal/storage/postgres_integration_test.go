@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GophKeeper/internal/migrations"
 	"github.com/GophKeeper/internal/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	gozap "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 func setupIntegrationTestStorage(t *testing.T) *PostgresStorage {
@@ -20,9 +21,13 @@ func setupIntegrationTestStorage(t *testing.T) *PostgresStorage {
 		t.Skip("DATABASE_URI не установлен - пропускаем интеграционный тест")
 	}
 
-	logger, _ := gozap.NewDevelopment()
+	logger, _ := zap.NewDevelopment()
 
-	// Создаем подключение к базе данных с выполнением миграций
+	// Выполняем миграции перед созданием хранилища
+	err := migrations.RunMigrations(context.Background(), dsn, "../../migrations")
+	require.NoError(t, err)
+
+	// Создаем подключение к базе данных
 	storage, err := NewPostgresStorage(context.Background(), dsn, logger)
 	require.NoError(t, err)
 	return storage

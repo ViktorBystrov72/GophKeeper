@@ -38,6 +38,35 @@ type ClientConfig struct {
 	Timeout       time.Duration
 }
 
+func loadEnvString(currentValue, defaultValue, envVar string) string {
+	if currentValue == defaultValue {
+		if value := os.Getenv(envVar); value != "" {
+			return value
+		}
+	}
+	return currentValue
+}
+
+func loadEnvBool(currentValue bool, envVar string) bool {
+	if !currentValue {
+		if value := os.Getenv(envVar); value != "" {
+			if val, err := strconv.ParseBool(value); err == nil {
+				return val
+			}
+		}
+	}
+	return currentValue
+}
+
+func loadEnvStringIfEmpty(currentValue, envVar string) string {
+	if currentValue == "" {
+		if value := os.Getenv(envVar); value != "" {
+			return value
+		}
+	}
+	return currentValue
+}
+
 // NewServerConfig создает новую конфигурацию сервера со значениями по умолчанию.
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
@@ -90,61 +119,15 @@ func LoadServerConfig() (*ServerConfig, error) {
 	flag.Parse()
 
 	// Загружаем из переменных окружения если флаги не установлены
-	if cfg.ServerAddress == ":8080" {
-		if addr := os.Getenv("SERVER_ADDRESS"); addr != "" {
-			cfg.ServerAddress = addr
-		}
-	}
-
-	if cfg.GRPCAddress == ":8081" {
-		if addr := os.Getenv("GRPC_ADDRESS"); addr != "" {
-			cfg.GRPCAddress = addr
-		}
-	}
-
-	if !cfg.EnableTLS {
-		if tls := os.Getenv("ENABLE_TLS"); tls != "" {
-			if val, err := strconv.ParseBool(tls); err == nil {
-				cfg.EnableTLS = val
-			}
-		}
-	}
-
-	if cfg.CertFile == "" {
-		if cert := os.Getenv("CERT_FILE"); cert != "" {
-			cfg.CertFile = cert
-		}
-	}
-
-	if cfg.KeyFile == "" {
-		if key := os.Getenv("KEY_FILE"); key != "" {
-			cfg.KeyFile = key
-		}
-	}
-
-	if cfg.DatabaseURI == "" {
-		if uri := os.Getenv("DATABASE_URI"); uri != "" {
-			cfg.DatabaseURI = uri
-		}
-	}
-
-	if cfg.JWTSecret == "" {
-		if secret := os.Getenv("JWT_SECRET"); secret != "" {
-			cfg.JWTSecret = secret
-		}
-	}
-
-	if cfg.EncryptionKey == "" {
-		if key := os.Getenv("ENCRYPTION_KEY"); key != "" {
-			cfg.EncryptionKey = key
-		}
-	}
-
-	if cfg.LogLevel == "info" {
-		if level := os.Getenv("LOG_LEVEL"); level != "" {
-			cfg.LogLevel = level
-		}
-	}
+	cfg.ServerAddress = loadEnvString(cfg.ServerAddress, ":8080", "SERVER_ADDRESS")
+	cfg.GRPCAddress = loadEnvString(cfg.GRPCAddress, ":8081", "GRPC_ADDRESS")
+	cfg.EnableTLS = loadEnvBool(cfg.EnableTLS, "ENABLE_TLS")
+	cfg.CertFile = loadEnvStringIfEmpty(cfg.CertFile, "CERT_FILE")
+	cfg.KeyFile = loadEnvStringIfEmpty(cfg.KeyFile, "KEY_FILE")
+	cfg.DatabaseURI = loadEnvStringIfEmpty(cfg.DatabaseURI, "DATABASE_URI")
+	cfg.JWTSecret = loadEnvStringIfEmpty(cfg.JWTSecret, "JWT_SECRET")
+	cfg.EncryptionKey = loadEnvStringIfEmpty(cfg.EncryptionKey, "ENCRYPTION_KEY")
+	cfg.LogLevel = loadEnvString(cfg.LogLevel, "info", "LOG_LEVEL")
 
 	// Валидируем конфигурацию на раннем этапе
 	if err := cfg.Validate(); err != nil {
@@ -166,43 +149,14 @@ func LoadClientConfig() (*ClientConfig, error) {
 	flag.StringVar(&cfg.LogLevel, "log", cfg.LogLevel, "Log level")
 
 	flag.Parse()
-	if cfg.ServerAddress == "localhost:8080" {
-		if addr := os.Getenv("SERVER_ADDRESS"); addr != "" {
-			cfg.ServerAddress = addr
-		}
-	}
 
-	if cfg.GRPCAddress == "localhost:8081" {
-		if addr := os.Getenv("GRPC_ADDRESS"); addr != "" {
-			cfg.GRPCAddress = addr
-		}
-	}
-
-	if !cfg.EnableTLS {
-		if tls := os.Getenv("ENABLE_TLS"); tls != "" {
-			if val, err := strconv.ParseBool(tls); err == nil {
-				cfg.EnableTLS = val
-			}
-		}
-	}
-
-	if cfg.CertFile == "" {
-		if cert := os.Getenv("CERT_FILE"); cert != "" {
-			cfg.CertFile = cert
-		}
-	}
-
-	if cfg.ConfigPath == "./config.json" {
-		if path := os.Getenv("CONFIG_PATH"); path != "" {
-			cfg.ConfigPath = path
-		}
-	}
-
-	if cfg.LogLevel == "info" {
-		if level := os.Getenv("LOG_LEVEL"); level != "" {
-			cfg.LogLevel = level
-		}
-	}
+	// Загружаем из переменных окружения если флаги не установлены
+	cfg.ServerAddress = loadEnvString(cfg.ServerAddress, "localhost:8080", "SERVER_ADDRESS")
+	cfg.GRPCAddress = loadEnvString(cfg.GRPCAddress, "localhost:8081", "GRPC_ADDRESS")
+	cfg.EnableTLS = loadEnvBool(cfg.EnableTLS, "ENABLE_TLS")
+	cfg.CertFile = loadEnvStringIfEmpty(cfg.CertFile, "CERT_FILE")
+	cfg.ConfigPath = loadEnvString(cfg.ConfigPath, "./config.json", "CONFIG_PATH")
+	cfg.LogLevel = loadEnvString(cfg.LogLevel, "info", "LOG_LEVEL")
 
 	return cfg, nil
 }

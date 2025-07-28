@@ -11,6 +11,7 @@ import (
 
 	"github.com/GophKeeper/internal/auth"
 	"github.com/GophKeeper/internal/crypto"
+	"github.com/GophKeeper/internal/migrations"
 	"github.com/GophKeeper/internal/otp"
 	"github.com/GophKeeper/internal/storage"
 	pb "github.com/GophKeeper/proto/gen/proto"
@@ -32,6 +33,10 @@ func setupIntegrationTestClient(t *testing.T) pb.GophKeeperClient {
 	// Настройка тестового окружения
 	logger, _ := zap.NewDevelopment()
 
+	// Выполняем миграции перед созданием хранилища
+	err := migrations.RunMigrations(context.Background(), dsn, "../../migrations")
+	require.NoError(t, err)
+
 	// Генерируем тестовые ключи программно
 	privateKey, publicKey := generateTestKeys(t)
 
@@ -41,7 +46,7 @@ func setupIntegrationTestClient(t *testing.T) pb.GophKeeperClient {
 	require.NoError(t, err)
 	otpService := otp.NewService()
 
-	// Создаем реальное хранилище с базой данных с выполнением миграций
+	// Создаем реальное хранилище с базой данных
 	storage, err := storage.NewPostgresStorage(context.Background(), dsn, logger)
 	require.NoError(t, err)
 
