@@ -82,27 +82,43 @@ func NewPostgresStorageForTests(ctx context.Context, databaseURI string, logger 
 	}, nil
 }
 
+// prepareNewEntity подготавливает ID и временные метки для новой сущности
+func (s *PostgresStorage) prepareNewEntity() (uuid.UUID, time.Time, time.Time) {
+	id := uuid.New()
+	now := time.Now()
+	return id, now, now
+}
+
+// prepareNewDataEntry подготавливает ID, временные метки и версию для новой записи данных
+func (s *PostgresStorage) prepareNewDataEntry() (uuid.UUID, time.Time, time.Time, int64) {
+	id := uuid.New()
+	now := time.Now()
+	return id, now, now, 1
+}
+
+// handleDBError обрабатывает ошибки базы данных с проверкой на уникальность
+func (s *PostgresStorage) handleDBError(err error, uniqueViolationMsg string) error {
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		return fmt.Errorf("%s: %w", uniqueViolationMsg, err)
+	}
+	return fmt.Errorf("database operation failed: %w", err)
+}
+
 // CreateUser создает нового пользователя.
 func (s *PostgresStorage) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
 		INSERT INTO users (id, username, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)`
 
-	user.ID = uuid.New()
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
+	user.ID, user.CreatedAt, user.UpdatedAt = s.prepareNewEntity()
 
 	_, err := s.pool.Exec(ctx, query, user.ID, user.Username, user.PasswordHash, user.CreatedAt, user.UpdatedAt)
-	if err != nil {
-		// Проверяем на дубликат имени пользователя
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return fmt.Errorf("username already exists: %w", err)
-		}
-		return fmt.Errorf("failed to create user: %w", err)
-	}
-
-	return nil
+	return s.handleDBError(err, "username already exists")
 }
 
 // GetUserByUsername получает пользователя по имени.
@@ -157,10 +173,7 @@ func (s *PostgresStorage) CreateDataEntry(ctx context.Context, entry *models.Dat
 		INSERT INTO data_entries (id, user_id, type, name, description, encrypted_data, metadata, created_at, updated_at, version)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 
-	entry.ID = uuid.New()
-	entry.CreatedAt = time.Now()
-	entry.UpdatedAt = time.Now()
-	entry.Version = 1
+	entry.ID, entry.CreatedAt, entry.UpdatedAt, entry.Version = s.prepareNewDataEntry()
 
 	_, err := s.pool.Exec(ctx, query,
 		entry.ID, entry.UserID, entry.Type, entry.Name,
@@ -168,15 +181,7 @@ func (s *PostgresStorage) CreateDataEntry(ctx context.Context, entry *models.Dat
 		entry.CreatedAt, entry.UpdatedAt, entry.Version,
 	)
 
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return fmt.Errorf("entry with this name already exists: %w", err)
-		}
-		return fmt.Errorf("failed to create data entry: %w", err)
-	}
-
-	return nil
+	return s.handleDBError(err, "entry with this name already exists")
 }
 
 // GetDataEntry получает запись данных по ID.
