@@ -1,0 +1,756 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "GophKeeper API",
+    "description": "API для менеджера паролей GophKeeper",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Операции аутентификации"
+    },
+    {
+      "name": "Data",
+      "description": "Операции с данными"
+    },
+    {
+      "name": "OTP",
+      "description": "Операции с OTP"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Регистрация пользователя",
+        "description": "Регистрирует нового пользователя в системе",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperRegisterRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешная регистрация",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "400": {
+            "description": "Неверные данные запроса"
+          },
+          "409": {
+            "description": "Пользователь уже существует"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Аутентификация пользователя",
+        "description": "Выполняет вход пользователя в систему",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperLoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешная аутентификация",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "401": {
+            "description": "Неверные учетные данные"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Обновление токена",
+        "description": "Обновляет JWT токен пользователя",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperRefreshTokenRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Токен обновлен",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "401": {
+            "description": "Неверный токен"
+          }
+        }
+      }
+    },
+    "/data": {
+      "get": {
+        "tags": ["Data"],
+        "summary": "Получение списка данных",
+        "description": "Возвращает список всех данных пользователя",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Тип данных для фильтрации",
+            "required": false,
+            "type": "string",
+            "enum": ["DATA_TYPE_CREDENTIALS", "DATA_TYPE_TEXT", "DATA_TYPE_BINARY", "DATA_TYPE_CARD"]
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Максимальное количество записей",
+            "required": false,
+            "type": "integer",
+            "default": 100
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Смещение для пагинации",
+            "required": false,
+            "type": "integer",
+            "default": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список данных",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperListDataResponse"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Data"],
+        "summary": "Создание данных",
+        "description": "Создает новую запись данных",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateDataRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные созданы",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/data/{id}": {
+      "get": {
+        "tags": ["Data"],
+        "summary": "Получение данных по ID",
+        "description": "Возвращает конкретную запись данных",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи данных",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные найдены",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Данные не найдены"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Data"],
+        "summary": "Обновление данных",
+        "description": "Обновляет существующую запись данных",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи данных",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperUpdateDataRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные обновлены",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Данные не найдены"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Data"],
+        "summary": "Удаление данных",
+        "description": "Удаляет запись данных",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи данных",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные удалены",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDeleteDataResponse"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Данные не найдены"
+          }
+        }
+      }
+    },
+    "/sync": {
+      "post": {
+        "tags": ["Data"],
+        "summary": "Синхронизация данных",
+        "description": "Синхронизирует данные между клиентами",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperSyncDataRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Синхронизация выполнена",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperSyncDataResponse"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/otp/generate": {
+      "post": {
+        "tags": ["OTP"],
+        "summary": "Генерация OTP кода",
+        "description": "Генерирует одноразовый пароль",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperGenerateOTPRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OTP код сгенерирован",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperGenerateOTPResponse"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          }
+        }
+      }
+    },
+    "/otp/secret": {
+      "post": {
+        "tags": ["OTP"],
+        "summary": "Создание OTP секрета",
+        "description": "Создает новый секрет для OTP",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateOTPSecretRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OTP секрет создан",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateOTPSecretResponse"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT токен в формате: Bearer <token>"
+    }
+  },
+  "definitions": {
+    "gophkeeperRegisterRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Имя пользователя",
+          "minLength": 3
+        },
+        "password": {
+          "type": "string",
+          "description": "Пароль",
+          "minLength": 6
+        }
+      },
+      "required": ["username", "password"],
+      "title": "Запрос регистрации"
+    },
+    "gophkeeperLoginRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Имя пользователя"
+        },
+        "password": {
+          "type": "string",
+          "description": "Пароль"
+        }
+      },
+      "required": ["username", "password"],
+      "title": "Запрос аутентификации"
+    },
+    "gophkeeperRefreshTokenRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "JWT токен для обновления"
+        }
+      },
+      "required": ["token"],
+      "title": "Запрос обновления токена"
+    },
+    "gophkeeperCreateDataRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/gophkeeperDataType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Название записи"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание записи"
+        },
+        "encryptedData": {
+          "type": "string",
+          "format": "byte",
+          "description": "Зашифрованные данные"
+        },
+        "metadata": {
+          "type": "string",
+          "description": "Метаданные"
+        }
+      },
+      "required": ["type", "name", "encryptedData"],
+      "title": "Запрос создания данных"
+    },
+    "gophkeeperUpdateDataRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/gophkeeperDataType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Название записи"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание записи"
+        },
+        "encryptedData": {
+          "type": "string",
+          "format": "byte",
+          "description": "Зашифрованные данные"
+        },
+        "metadata": {
+          "type": "string",
+          "description": "Метаданные"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64",
+          "description": "Версия записи для оптимистичной блокировки"
+        }
+      },
+      "required": ["type", "name", "encryptedData", "version"],
+      "title": "Запрос обновления данных"
+    },
+    "gophkeeperSyncDataRequest": {
+      "type": "object",
+      "properties": {
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Время последней синхронизации"
+        }
+      },
+      "title": "Запрос синхронизации"
+    },
+    "gophkeeperGenerateOTPRequest": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "type": "string",
+          "description": "Секретный ключ для генерации OTP"
+        }
+      },
+      "required": ["secret"],
+      "title": "Запрос генерации OTP"
+    },
+    "gophkeeperCreateOTPSecretRequest": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string",
+          "description": "Издатель OTP"
+        },
+        "accountName": {
+          "type": "string",
+          "description": "Имя аккаунта"
+        }
+      },
+      "required": ["issuer", "accountName"],
+      "title": "Запрос создания OTP секрета"
+    },
+    "gophkeeperAuthResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user": {
+          "$ref": "#/definitions/gophkeeperUser"
+        }
+      },
+      "title": "Ответ аутентификации"
+    },
+    "gophkeeperCreateOTPSecretResponse": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "type": "string"
+        },
+        "qrCodeUrl": {
+          "type": "string"
+        },
+        "backupCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Ответ создания OTP секрета"
+    },
+    "gophkeeperDataEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/gophkeeperDataType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "encryptedData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "metadata": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Запись данных"
+    },
+    "gophkeeperDataEntryResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntry": {
+          "$ref": "#/definitions/gophkeeperDataEntry"
+        }
+      },
+      "title": "Ответ записи данных"
+    },
+    "gophkeeperDataType": {
+      "type": "string",
+      "enum": [
+        "DATA_TYPE_UNSPECIFIED",
+        "DATA_TYPE_CREDENTIALS",
+        "DATA_TYPE_TEXT",
+        "DATA_TYPE_BINARY",
+        "DATA_TYPE_CARD"
+      ],
+      "default": "DATA_TYPE_UNSPECIFIED",
+      "title": "Типы данных"
+    },
+    "gophkeeperDeleteDataResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "Ответ удаления данных"
+    },
+    "gophkeeperGenerateOTPResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timeRemaining": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Ответ генерации OTP"
+    },
+    "gophkeeperListDataResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gophkeeperDataEntry"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Ответ списка данных"
+    },
+    "gophkeeperSyncDataResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gophkeeperDataEntry"
+          }
+        },
+        "deletedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Ответ синхронизации"
+    },
+    "gophkeeperUser": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Пользователь"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

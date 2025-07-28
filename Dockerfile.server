@@ -1,0 +1,44 @@
+FROM golang:1.24.4-alpine AS builder
+
+RUN apk add --no-cache git ca-certificates tzdata
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Устанавливаем protoc
+RUN apk add --no-cache protobuf
+
+# Генерируем proto файлы
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN protoc --proto_path=. \
+    --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+    proto/gophkeeper_simple.proto
+
+# Собираем сервер
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+
+FROM alpine:latest
+
+# Устанавливаем ca-certificates для HTTPS
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Копируем бинарный файл
+COPY --from=builder /app/server .
+
+# Копируем директорию миграций
+COPY --from=builder /app/migrations ./migrations
+
+# Создаем директорию для ключей
+RUN mkdir -p keys
+
+EXPOSE 8080 8081
+
+CMD ["./server"]

@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package gophkeeper;
+
+option go_package = "./gen";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+// Сервис для управления паролями
+service GophKeeper {
+  // Регистрация пользователя
+  rpc Register(RegisterRequest) returns (AuthResponse) {
+    option (google.api.http) = {
+      post: "/auth/register"
+      body: "*"
+    };
+  }
+  
+  // Аутентификация пользователя  
+  rpc Login(LoginRequest) returns (AuthResponse) {
+    option (google.api.http) = {
+      post: "/auth/login"
+      body: "*"
+    };
+  }
+  
+  // Обновление токена
+  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse) {
+    option (google.api.http) = {
+      post: "/auth/refresh"
+      body: "*"
+    };
+  }
+  
+  // Создание записи данных
+  rpc CreateData(CreateDataRequest) returns (DataEntryResponse) {
+    option (google.api.http) = {
+      post: "/data"
+      body: "*"
+    };
+  }
+  
+  // Получение записи данных
+  rpc GetData(GetDataRequest) returns (DataEntryResponse) {
+    option (google.api.http) = {
+      get: "/data/{id}"
+    };
+  }
+  
+  // Получение списка записей данных
+  rpc ListData(ListDataRequest) returns (ListDataResponse) {
+    option (google.api.http) = {
+      get: "/data"
+    };
+  }
+  
+  // Обновление записи данных
+  rpc UpdateData(UpdateDataRequest) returns (DataEntryResponse) {
+    option (google.api.http) = {
+      put: "/data/{id}"
+      body: "*"
+    };
+  }
+  
+  // Удаление записи данных
+  rpc DeleteData(DeleteDataRequest) returns (DeleteDataResponse) {
+    option (google.api.http) = {
+      delete: "/data/{id}"
+    };
+  }
+  
+  // Синхронизация данных
+  rpc SyncData(SyncDataRequest) returns (SyncDataResponse) {
+    option (google.api.http) = {
+      post: "/sync"
+      body: "*"
+    };
+  }
+  
+  // Генерация OTP кода
+  rpc GenerateOTP(GenerateOTPRequest) returns (GenerateOTPResponse) {
+    option (google.api.http) = {
+      post: "/otp/generate"
+      body: "*"
+    };
+  }
+  
+  // Создание OTP секрета
+  rpc CreateOTPSecret(CreateOTPSecretRequest) returns (CreateOTPSecretResponse) {
+    option (google.api.http) = {
+      post: "/otp/secret"
+      body: "*"
+    };
+  }
+}
+
+// Типы данных
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_CREDENTIALS = 1;
+  DATA_TYPE_TEXT = 2;
+  DATA_TYPE_BINARY = 3;
+  DATA_TYPE_CARD = 4;
+}
+
+// Запрос регистрации
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Запрос аутентификации
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Запрос обновления токена
+message RefreshTokenRequest {
+  string token = 1;
+}
+
+// Ответ аутентификации
+message AuthResponse {
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+  User user = 3;
+}
+
+// Пользователь
+message User {
+  string id = 1;
+  string username = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+// Запрос создания данных
+message CreateDataRequest {
+  DataType type = 1;
+  string name = 2;
+  string description = 3;
+  bytes encrypted_data = 4;
+  string metadata = 5;
+}
+
+// Запрос получения данных
+message GetDataRequest {
+  string id = 1;
+}
+
+// Запрос списка данных
+message ListDataRequest {
+  optional DataType type = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+// Запрос обновления данных
+message UpdateDataRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bytes encrypted_data = 4;
+  string metadata = 5;
+  int64 version = 6;
+}
+
+// Запрос удаления данных
+message DeleteDataRequest {
+  string id = 1;
+}
+
+// Запрос синхронизации
+message SyncDataRequest {
+  google.protobuf.Timestamp last_sync_time = 1;
+}
+
+// Запрос генерации OTP
+message GenerateOTPRequest {
+  string secret = 1;
+}
+
+// Запрос создания OTP секрета
+message CreateOTPSecretRequest {
+  string issuer = 1;
+  string account_name = 2;
+}
+
+// Ответ записи данных
+message DataEntryResponse {
+  DataEntry data_entry = 1;
+}
+
+// Ответ списка данных
+message ListDataResponse {
+  repeated DataEntry data_entries = 1;
+  int32 total = 2;
+}
+
+// Ответ удаления данных
+message DeleteDataResponse {
+  bool success = 1;
+}
+
+// Ответ синхронизации
+message SyncDataResponse {
+  repeated DataEntry data_entries = 1;
+  repeated string deleted_ids = 2;
+  google.protobuf.Timestamp last_sync_time = 3;
+}
+
+// Ответ генерации OTP
+message GenerateOTPResponse {
+  string code = 1;
+  google.protobuf.Timestamp expires_at = 2;
+  int32 time_remaining = 3;
+}
+
+// Ответ создания OTP секрета
+message CreateOTPSecretResponse {
+  string secret = 1;
+  string qr_code_url = 2;
+  repeated string backup_codes = 3;
+}
+
+// Запись данных
+message DataEntry {
+  string id = 1;
+  DataType type = 2;
+  string name = 3;
+  string description = 4;
+  bytes encrypted_data = 5;
+  string metadata = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  int64 version = 9;
+} 

@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package gophkeeper;
+
+option go_package = "./gen";
+
+// Сервис для управления паролями
+service GophKeeper {
+  // Регистрация пользователя
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  
+  // Аутентификация пользователя  
+  rpc Login(LoginRequest) returns (AuthResponse);
+  
+  // Обновление токена
+  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+  
+  // Создание записи данных
+  rpc CreateData(CreateDataRequest) returns (DataEntryResponse);
+  
+  // Получение записи данных
+  rpc GetData(GetDataRequest) returns (DataEntryResponse);
+  
+  // Получение списка записей данных
+  rpc ListData(ListDataRequest) returns (ListDataResponse);
+  
+  // Обновление записи данных
+  rpc UpdateData(UpdateDataRequest) returns (DataEntryResponse);
+  
+  // Удаление записи данных
+  rpc DeleteData(DeleteDataRequest) returns (DeleteDataResponse);
+  
+  // Синхронизация данных
+  rpc SyncData(SyncDataRequest) returns (SyncDataResponse);
+  
+  // Генерация OTP кода
+  rpc GenerateOTP(GenerateOTPRequest) returns (GenerateOTPResponse);
+  
+  // Создание OTP секрета
+  rpc CreateOTPSecret(CreateOTPSecretRequest) returns (CreateOTPSecretResponse);
+}
+
+// Типы данных
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_CREDENTIALS = 1;
+  DATA_TYPE_TEXT = 2;
+  DATA_TYPE_BINARY = 3;
+  DATA_TYPE_CARD = 4;
+}
+
+// Запрос регистрации
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Запрос аутентификации
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Запрос обновления токена
+message RefreshTokenRequest {
+  string token = 1;
+}
+
+// Ответ аутентификации
+message AuthResponse {
+  string token = 1;
+  string expires_at = 2;
+  User user = 3;
+}
+
+// Пользователь
+message User {
+  string id = 1;
+  string username = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+// Запрос создания данных
+message CreateDataRequest {
+  DataType type = 1;
+  string name = 2;
+  string description = 3;
+  bytes encrypted_data = 4;
+  string metadata = 5;
+}
+
+// Запрос получения данных
+message GetDataRequest {
+  string id = 1;
+}
+
+// Запрос списка данных
+message ListDataRequest {
+  DataType type = 1;
+}
+
+// Запрос обновления данных
+message UpdateDataRequest {
+  string id = 1;
+  DataType type = 2;
+  string name = 3;
+  string description = 4;
+  bytes encrypted_data = 5;
+  string metadata = 6;
+}
+
+// Запрос удаления данных
+message DeleteDataRequest {
+  string id = 1;
+}
+
+// Запрос синхронизации
+message SyncDataRequest {
+  int64 last_sync_time = 1;
+}
+
+// Запрос генерации OTP
+message GenerateOTPRequest {
+  string secret = 1;
+}
+
+// Запрос создания OTP секрета
+message CreateOTPSecretRequest {
+  string issuer = 1;
+  string account_name = 2;
+}
+
+// Ответ с записью данных
+message DataEntryResponse {
+  DataEntry data_entry = 1;
+}
+
+// Ответ со списком записей
+message ListDataResponse {
+  repeated DataEntry data_entries = 1;
+}
+
+// Ответ удаления
+message DeleteDataResponse {
+  bool success = 1;
+}
+
+// Ответ синхронизации
+message SyncDataResponse {
+  repeated DataEntry data_entries = 1;
+  repeated string deleted_ids = 2;
+}
+
+// Ответ генерации OTP
+message GenerateOTPResponse {
+  string code = 1;
+  int32 time_remaining = 2;
+}
+
+// Ответ создания OTP секрета
+message CreateOTPSecretResponse {
+  string secret = 1;
+  string qr_code_url = 2;
+  repeated string backup_codes = 3;
+}
+
+// Запись данных
+message DataEntry {
+  string id = 1;
+  string user_id = 2;
+  DataType type = 3;
+  string name = 4;
+  string description = 5;
+  bytes encrypted_data = 6;
+  string metadata = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  int64 version = 10;
+} 

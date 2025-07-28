@@ -1,0 +1,713 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "gophkeeper.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "GophKeeper"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Аутентификация пользователя",
+        "operationId": "GophKeeper_Login",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Обновление токена",
+        "operationId": "GophKeeper_RefreshToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperRefreshTokenRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Регистрация пользователя",
+        "operationId": "GophKeeper_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperRegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/data": {
+      "get": {
+        "summary": "Получение списка записей данных",
+        "operationId": "GophKeeper_ListData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperListDataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "DATA_TYPE_UNSPECIFIED",
+              "DATA_TYPE_CREDENTIALS",
+              "DATA_TYPE_TEXT",
+              "DATA_TYPE_BINARY",
+              "DATA_TYPE_CARD"
+            ],
+            "default": "DATA_TYPE_UNSPECIFIED"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      },
+      "post": {
+        "summary": "Создание записи данных",
+        "operationId": "GophKeeper_CreateData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateDataRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/data/{id}": {
+      "get": {
+        "summary": "Получение записи данных",
+        "operationId": "GophKeeper_GetData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      },
+      "delete": {
+        "summary": "Удаление записи данных",
+        "operationId": "GophKeeper_DeleteData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDeleteDataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      },
+      "put": {
+        "summary": "Обновление записи данных",
+        "operationId": "GophKeeper_UpdateData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperDataEntryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "encryptedData": {
+                  "type": "string",
+                  "format": "byte"
+                },
+                "metadata": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string",
+                  "format": "int64"
+                }
+              },
+              "title": "Запрос обновления данных"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/otp/generate": {
+      "post": {
+        "summary": "Генерация OTP кода",
+        "operationId": "GophKeeper_GenerateOTP",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperGenerateOTPResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperGenerateOTPRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/otp/secret": {
+      "post": {
+        "summary": "Создание OTP секрета",
+        "operationId": "GophKeeper_CreateOTPSecret",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateOTPSecretResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperCreateOTPSecretRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    },
+    "/sync": {
+      "post": {
+        "summary": "Синхронизация данных",
+        "operationId": "GophKeeper_SyncData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gophkeeperSyncDataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gophkeeperSyncDataRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GophKeeper"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "gophkeeperAuthResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user": {
+          "$ref": "#/definitions/gophkeeperUser"
+        }
+      },
+      "title": "Ответ аутентификации"
+    },
+    "gophkeeperCreateDataRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/gophkeeperDataType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "encryptedData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "metadata": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос создания данных"
+    },
+    "gophkeeperCreateOTPSecretRequest": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос создания OTP секрета"
+    },
+    "gophkeeperCreateOTPSecretResponse": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "type": "string"
+        },
+        "qrCodeUrl": {
+          "type": "string"
+        },
+        "backupCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Ответ создания OTP секрета"
+    },
+    "gophkeeperDataEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/gophkeeperDataType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "encryptedData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "metadata": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Запись данных"
+    },
+    "gophkeeperDataEntryResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntry": {
+          "$ref": "#/definitions/gophkeeperDataEntry"
+        }
+      },
+      "title": "Ответ записи данных"
+    },
+    "gophkeeperDataType": {
+      "type": "string",
+      "enum": [
+        "DATA_TYPE_UNSPECIFIED",
+        "DATA_TYPE_CREDENTIALS",
+        "DATA_TYPE_TEXT",
+        "DATA_TYPE_BINARY",
+        "DATA_TYPE_CARD"
+      ],
+      "default": "DATA_TYPE_UNSPECIFIED",
+      "title": "Типы данных"
+    },
+    "gophkeeperDeleteDataResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "Ответ удаления данных"
+    },
+    "gophkeeperGenerateOTPRequest": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос генерации OTP"
+    },
+    "gophkeeperGenerateOTPResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timeRemaining": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Ответ генерации OTP"
+    },
+    "gophkeeperListDataResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gophkeeperDataEntry"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Ответ списка данных"
+    },
+    "gophkeeperLoginRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос аутентификации"
+    },
+    "gophkeeperRefreshTokenRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос обновления токена"
+    },
+    "gophkeeperRegisterRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "title": "Запрос регистрации"
+    },
+    "gophkeeperSyncDataRequest": {
+      "type": "object",
+      "properties": {
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Запрос синхронизации"
+    },
+    "gophkeeperSyncDataResponse": {
+      "type": "object",
+      "properties": {
+        "dataEntries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gophkeeperDataEntry"
+          }
+        },
+        "deletedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Ответ синхронизации"
+    },
+    "gophkeeperUser": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Пользователь"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}
